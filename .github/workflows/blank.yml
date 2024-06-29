@@ -3,6 +3,8 @@ name: Compare and Send
 on:
   schedule:
     - cron: '*/30 * * * *'
+  workflow_dispatch:
+  
 jobs:
   compare_and_send:
     runs-on: ubuntu-latest
