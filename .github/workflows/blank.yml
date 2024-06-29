@@ -49,6 +49,7 @@ jobs:
         git config --global user.email 'github-actions@github.com'
         git add latestHash
         git commit -m "Update latestHash with latest commit hash"
+        git remote set-url origin https://${{ secrets.ASE_GITHUB_TOKEN }}@github.com/ArtCrush/_blank
         git push
       env:
         GITHUB_TOKEN: ${{ secrets.ASE_GITHUB_TOKEN }}
