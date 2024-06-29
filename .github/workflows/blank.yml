@@ -1,0 +1,58 @@
+name: Compare and Send
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+jobs:
+  compare_and_send:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout current repository
+      uses: actions/checkout@v2
+
+    - name: Get latest commit
+      run: |
+        git clone ${{ secrets.MY_REPO_URL }} ${{ secrets.FILENAME }}
+        cd ${{ secrets.FILENAME }}
+        git log -1 --pretty=format:"%H" > ../latest_commit.txt
+      env:
+        GITHUB_TOKEN: ${{ secrets.ASE_GITHUB_TOKEN }}
+
+    - name: Read latestHash from current repository
+      id: read_current
+      run: echo "::set-output name=content::$(cat latestHash)"
+
+    - name: Compare latest commit hash with latestHash 
+      id: compare_hash
+      run: |
+        latest_commit=$(cat latest_commit.txt)
+        current_hash=$(cat latestHash)
+        if [ "$latest_commit" = "$current_hash" ]; then
+          echo "Hashes are the same"
+          echo "::set-output name=hashes_are_same::true"
+        else
+          echo "Hashes are different"
+          echo "::set-output name=hashes_are_same::false"
+        fi
+
+    - name: Zip and send to Discord webhook
+      if: steps.compare_files.outputs.files_are_same == 'false'
+      run: |
+        cd ${{ secrets.FILENAME }}
+        zip -r ${{ secrets.FILENAME }}.zip .
+        curl -X POST -H "Content-Type: application/json" -d '${{ secrets.EMBED_CONTENT }}' ${{ secrets.WEBHOOK_URL }}
+        curl -X POST -H "Content-Type: multipart/form-data" -F "file1=@${{ secrets.FILENAME }}.zip" ${{ secrets.WEBHOOK_URL }}
+
+    - name: Update latestHash in current repository
+      if: steps.compare_files.outputs.files_are_same == 'false'
+      run: |
+        latest_commit=$(cat latest_commit.txt)
+        echo $latest_commit > latestHash
+        git config --global user.name 'github-actions'
+        git config --global user.email 'github-actions@github.com'
+        git add latestHash
+        git commit -m "Update latestHash with latest commit hash"
+        git push
+      env:
+        GITHUB_TOKEN: ${{ secrets.ASE_GITHUB_TOKEN }}
