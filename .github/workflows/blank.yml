@@ -37,7 +37,7 @@ jobs:
         fi
 
     - name: Zip and send to Discord webhook
-      if: steps.compare_files.outputs.files_are_same == 'false'
+      if: steps.compare_files.outputs.hashes_are_same == 'false'
       run: |
         cd ${{ secrets.FILENAME }}
         zip -r ${{ secrets.FILENAME }}.zip .
@@ -45,7 +45,7 @@ jobs:
         curl -X POST -H "Content-Type: multipart/form-data" -F "file1=@${{ secrets.FILENAME }}.zip" ${{ secrets.WEBHOOK_URL }}
 
     - name: Update latestHash in current repository
-      if: steps.compare_files.outputs.files_are_same == 'false'
+      if: steps.compare_files.outputs.hashes_are_same == 'false'
       run: |
         latest_commit=$(cat latest_commit.txt)
         echo $latest_commit > latestHash
