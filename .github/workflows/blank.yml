@@ -19,10 +19,6 @@ jobs:
         cd ${{ secrets.FILENAME }}
         git log -1 --pretty=format:"%H" > ../latest_commit.txt
 
-    - name: Read latestHash from current repository
-      id: read_current
-      run: echo "::set-output name=content::$(cat latestHash)"
-
     - name: Compare latest commit hash with latestHash 
       id: compare_hash
       run: |
@@ -30,14 +26,14 @@ jobs:
         current_hash=$(cat latestHash)
         if [ "$latest_commit" = "$current_hash" ]; then
           echo "Hashes are the same"
-          echo "::set-output name=hashes_are_same::true"
+          echo "hashes_are_same=true" >> $GITHUB_ENV
         else
           echo "Hashes are different"
-          echo "::set-output name=hashes_are_same::false"
+          echo "hashes_are_same=false" >> $GITHUB_ENV
         fi
 
     - name: Zip and send to Discord webhook
-      if: steps.compare_files.outputs.hashes_are_same == 'false'
+      if: env.hashes_are_same == 'false'
       run: |
         cd ${{ secrets.FILENAME }}
         zip -r ${{ secrets.FILENAME }}.zip .
@@ -45,7 +41,7 @@ jobs:
         curl -X POST -H "Content-Type: multipart/form-data" -F "file1=@${{ secrets.FILENAME }}.zip" ${{ secrets.WEBHOOK_URL }}
 
     - name: Update latestHash in current repository
-      if: steps.compare_files.outputs.hashes_are_same == 'false'
+      if: env.hashes_are_same == 'false'
       run: |
         latest_commit=$(cat latest_commit.txt)
         echo $latest_commit > latestHash
