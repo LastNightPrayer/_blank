@@ -15,11 +15,9 @@ jobs:
 
     - name: Get latest commit
       run: |
-        git clone https://${{ secrets.MY_GITHUB_TOKEN }}@github.com/${{ secrets.MY_REPO_URL }} ${{ secrets.FILENAME }}
+        git clone https://${{ secrets.ASE_GITHUB_TOKEN }}@github.com/${{ secrets.MY_REPO_URL }} ${{ secrets.FILENAME }}
         cd ${{ secrets.FILENAME }}
         git log -1 --pretty=format:"%H" > ../latest_commit.txt
-      env:
-        GITHUB_TOKEN: ${{ secrets.ASE_GITHUB_TOKEN }}
 
     - name: Read latestHash from current repository
       id: read_current
