@@ -1,14 +1,13 @@
 name: Compare and Send
 
 on:
-  #schedule:
-    #- cron: '*/30 * * * *'
+  schedule:
+    - cron: '*/30 * * * *'
   workflow_dispatch:
   
 jobs:
   compare_and_send:
-    runs-on: ubuntu-latest
-
+    runs-on: windows-latest
     steps:
     - name: Checkout current repository
       uses: actions/checkout@v2
@@ -22,34 +21,68 @@ jobs:
     - name: Compare latest commit hash with latestHash 
       id: compare_hash
       run: |
-        latest_commit=$(cat latest_commit.txt)
-        current_hash=$(cat latestHash)
-        if [ "$latest_commit" = "$current_hash" ]; then
-          echo "Hashes are the same"
-          echo "hashes_are_same=true" >> $GITHUB_ENV
-        else
-          echo "Hashes are different"
-          echo "hashes_are_same=false" >> $GITHUB_ENV
-        fi
+        @echo off
+        setlocal
+        set "latest_commit="
+        for /f "tokens=*" %%i in (latest_commit.txt) do set "latest_commit=%%i"
+        set "current_hash="
+        for /f "tokens=*" %%i in (latestHash) do set "current_hash=%%i"
+
+        if "%latest_commit%" == "%current_hash%" (
+          echo Hashes are the same
+          echo hashes_are_same=true >> %GITHUB_ENV%
+        ) else (
+          echo Hashes are different
+          echo hashes_are_same=false >> %GITHUB_ENV%
+        )
+        endlocal
+
+    - uses: krdlab/setup-haxe@master
+      with:
+        haxe-version: latest
+
+    - name: Install Haxelib
+      run: |
+        haxelib setup C:/haxelib
+        haxelib install hxcpp > /dev/null --quiet
+        haxe -cp ./setup -D analyzer-optimize -main Main --interp
+      shell: cmd
+
+    - name: Create Version Tag
+      run: echo "${{github.run_id}}" > VERSION
+
+    - name: Compile
+      run: haxelib run lime build windows --app-version="4.0.0-${{ github.run_id}}"
 
     - name: Zip and send to Discord webhook
       if: env.hashes_are_same == 'false'
       run: |
-        cd ${{ secrets.FILENAME }}
-        zip -r ${{ secrets.FILENAME }}.zip .
-        curl -X POST -H "Content-Type: application/json" -d '${{ secrets.EMBED_CONTENT }}' ${{ secrets.WEBHOOK_URL }}
-        curl -X POST -H "Content-Type: multipart/form-data" -F "file1=@${{ secrets.FILENAME }}.zip" ${{ secrets.WEBHOOK_URL }}
+        @echo off
+        setlocal
+    
+        cd %FILENAME%
+        powershell -Command "Compress-Archive -Path export/release/windows/bin -DestinationPath %FILENAME%.zip"
+        curl -X POST -H "Content-Type: application/json" -d "%EMBED_CONTENT%" %WEBHOOK_URL%
+        curl -X POST -H "Content-Type: multipart/form-data" -F "file1=@%FILENAME%.zip" %WEBHOOK_URL%
+    
+        endlocal
 
     - name: Update latestHash in current repository
       if: env.hashes_are_same == 'false'
       run: |
-        latest_commit=$(cat latest_commit.txt)
-        echo $latest_commit > latestHash
-        git config --global user.name 'github-actions'
-        git config --global user.email 'github-actions@github.com'
+        @echo off
+        setlocal
+
+        for /f "tokens=*" %%i in (latest_commit.txt) do set "latest_commit=%%i"
+        echo %latest_commit% > latestHash
+
+        git config --global user.name "github-actions"
+        git config --global user.email "github-actions@github.com"
         git add latestHash
         git commit -m "Update latestHash with latest commit hash"
-        git remote set-url origin https://${{ secrets.ASE_GITHUB_TOKEN }}@github.com/ArtCrush/_blank
+        git remote set-url origin https://%GITHUB_TOKEN%@github.com/ArtCrush/_blank
         git push
+
+        endlocal
       env:
         GITHUB_TOKEN: ${{ secrets.ASE_GITHUB_TOKEN }}
