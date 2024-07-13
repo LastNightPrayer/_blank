@@ -42,7 +42,7 @@ jobs:
     - name: Install Haxelib
       run: |
         haxelib setup C:/haxelib
-        haxelib install hxcpp --quiet
+        haxelib install hxcpp --quiet --global
         cd ${{ secrets.FILENAME }}
         haxe -cp .\setup -D analyzer-optimize -main Main --interp
       shell: cmd
