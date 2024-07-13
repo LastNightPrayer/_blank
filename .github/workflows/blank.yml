@@ -55,32 +55,22 @@ jobs:
     - name: Zip and send to Discord webhook
       if: env.hashes_are_same == 'false'
       run: |
-        @echo off
-        setlocal
-    
         cd %FILENAME%
-        powershell -Command "Compress-Archive -Path export/release/windows/bin -DestinationPath %FILENAME%.zip"
+        Compress-Archive -Path export/release/windows/bin -DestinationPath %FILENAME%.zip
         curl -X POST -H "Content-Type: application/json" -d "%EMBED_CONTENT%" %WEBHOOK_URL%
         curl -X POST -H "Content-Type: multipart/form-data" -F "file1=@%FILENAME%.zip" %WEBHOOK_URL%
-    
-        endlocal
 
     - name: Update latestHash in current repository
       if: env.hashes_are_same == 'false'
       run: |
-        @echo off
-        setlocal
-
         for /f "tokens=*" %%i in (latest_commit.txt) do set "latest_commit=%%i"
         echo %latest_commit% > latestHash
-
         git config --global user.name "github-actions"
         git config --global user.email "github-actions@github.com"
         git add latestHash
         git commit -m "Update latestHash with latest commit hash"
         git remote set-url origin https://%GITHUB_TOKEN%@github.com/ArtCrush/_blank
         git push
-
-        endlocal
+      shell: cmd
       env:
         GITHUB_TOKEN: ${{ secrets.ASE_GITHUB_TOKEN }}
