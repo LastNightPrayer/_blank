@@ -33,7 +33,8 @@ jobs:
           echo Hashes are different
           echo hashes_are_same=false >> %GITHUB_ENV%
         )
-
+      shell: cmd
+      
     - uses: krdlab/setup-haxe@master
       with:
         haxe-version: latest
