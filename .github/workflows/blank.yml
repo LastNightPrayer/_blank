@@ -14,7 +14,7 @@ jobs:
 
     - name: Get latest commit
       run: |
-        git clone https://${{ secrets.ASE_GITHUB_TOKEN }}@github.com/${{ secrets.MY_REPO_URL }} ${{ secrets.FILENAME }}
+        git clone https://${{ secrets.ASE_GITHUB_TOKEN }}@github.com/${{ secrets.MY_REPO_URL }} ${{ secrets.FILENAME }} --depth=1
         cd ${{ secrets.FILENAME }}
         git log -1 --pretty=format:"%H" > ../latest_commit.txt
 
@@ -42,8 +42,8 @@ jobs:
     - name: Install Haxelib
       run: |
         haxelib setup C:/haxelib
-        haxelib install hxcpp > /dev/null --quiet
-        haxe -cp ./setup -D analyzer-optimize -main Main --interp
+        haxelib install hxcpp --quiet
+        haxe -cp .\setup -D analyzer-optimize -main Main --interp
       shell: cmd
 
     - name: Create Version Tag
