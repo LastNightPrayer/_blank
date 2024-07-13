@@ -48,11 +48,15 @@ jobs:
       shell: cmd
 
     - name: Compile
-      run: haxelib run lime build windows --app-version="4.0.0-${{ github.run_id}}"
+      run: |
+        cd ${{ secrets.FILENAME }}
+        haxelib run lime build windows --app-version="4.0.0-${{ github.run_id}}"
       shell: cmd
+      
     - name: Zip and send to Discord webhook
       if: env.hashes_are_same == 'false'
       run: |
+        cd ${{ secrets.FILENAME }}
         Compress-Archive -Path export/release/windows/bin -DestinationPath %FILENAME%.zip
         curl -X POST -H "Content-Type: application/json" -d "%EMBED_CONTENT%" %WEBHOOK_URL%
         curl -X POST -H "Content-Type: multipart/form-data" -F "file1=@%FILENAME%.zip" %WEBHOOK_URL%
