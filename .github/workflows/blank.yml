@@ -21,8 +21,6 @@ jobs:
     - name: Compare latest commit hash with latestHash 
       id: compare_hash
       run: |
-        @echo off
-        setlocal
         set "latest_commit="
         for /f "tokens=*" %%i in (latest_commit.txt) do set "latest_commit=%%i"
         set "current_hash="
@@ -35,7 +33,6 @@ jobs:
           echo Hashes are different
           echo hashes_are_same=false >> %GITHUB_ENV%
         )
-        endlocal
 
     - uses: krdlab/setup-haxe@master
       with:
