@@ -9,12 +9,15 @@ jobs:
   compare_and_send:
     runs-on: windows-latest
     steps:
-    - name: Checkout current repository
-      uses: actions/checkout@v2
-
+    - uses: actions/checkout@v2
+      
+    - uses: krdlab/setup-haxe@master
+      with:
+        haxe-version: latest
+        
     - name: Get latest commit
       run: |
-        git clone https://${{ secrets.ASE_GITHUB_TOKEN }}@github.com/${{ secrets.MY_REPO_URL }} ${{ secrets.FILENAME }} --depth=1
+        git clone https://${{ secrets.ASE_GITHUB_TOKEN }}@github.com/${{ secrets.MY_REPO_URL }} ${{ secrets.FILENAME }}
         cd ${{ secrets.FILENAME }}
         git log -1 --pretty=format:"%H" > ../latest_commit.txt
 
@@ -34,10 +37,6 @@ jobs:
           echo hashes_are_same=false >> %GITHUB_ENV%
         )
       shell: cmd
-      
-    - uses: krdlab/setup-haxe@master
-      with:
-        haxe-version: latest
 
     - name: Install Haxelib
       run: |
