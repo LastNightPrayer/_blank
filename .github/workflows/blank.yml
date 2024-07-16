@@ -10,10 +10,6 @@ jobs:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v2
-      
-    - uses: krdlab/setup-haxe@master
-      with:
-        haxe-version: latest
         
     - name: Get latest commit
       run: |
@@ -37,8 +33,14 @@ jobs:
           echo hashes_are_same=false >> %GITHUB_ENV%
         )
       shell: cmd
+      
+    - uses: krdlab/setup-haxe@master
+      if: env.hashes_are_same == 'false'
+      with:
+        haxe-version: latest
 
     - name: Install Haxelib
+      if: env.hashes_are_same == 'false'
       run: |
         haxelib setup C:/haxelib
         haxelib install hxcpp --quiet --global
@@ -47,16 +49,19 @@ jobs:
       shell: cmd
     
     - name : check list
+      if: env.hashes_are_same == 'false'
       run: haxelib list
 
     - name : check path
+      if: env.hashes_are_same == 'false'
       run: haxelib config
       
     - name: Compile
+      if: env.hashes_are_same == 'false'
       run: |
         cd ${{ secrets.FILENAME }}
         haxelib fixrepo
-        haxelib run lime build windows --app-version="4.0.0-${{ github.run_id}}"
+        haxelib run lime build windows --app-version="4.0.0-${{ github.run_id }}"
       
     - name: Zip and send to Discord webhook
       if: env.hashes_are_same == 'false'
