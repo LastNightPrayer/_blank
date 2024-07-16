@@ -45,7 +45,13 @@ jobs:
         cd ${{ secrets.FILENAME }}
         haxe -cp ./setup -D analyzer-optimize -main Main --interp
       shell: cmd
+    
+    - name : check list
+      run: haxelib list
 
+    - name : check path
+      run: haxelib confih
+      
     - name: Compile
       run: |
         cd ${{ secrets.FILENAME }}
