@@ -50,7 +50,7 @@ jobs:
       run: haxelib list
 
     - name : check path
-      run: haxelib confih
+      run: haxelib config
       
     - name: Compile
       run: |
