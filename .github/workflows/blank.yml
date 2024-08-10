@@ -41,7 +41,6 @@ jobs:
         cd ${{ secrets.FILENAME }}
         haxelib setup C:/haxelib
         haxelib install hxcpp --quiet --global
-        echo "$PWD"
         .\setup\setup-windows.bat
     - name: Compile
       if: env.hashes_are_same == 'false'
@@ -54,14 +53,14 @@ jobs:
       run: |
         cd ${{ secrets.FILENAME }}
         Compress-Archive -Path export/release/windows/bin -DestinationPath ${{ secrets.FILENAME }}.zip
-        curl -X POST -H "Content-Type: application/json" -d '${{ secrets.EMBED_CONTENT }}' "${{ secrets.WEBHOOK_URL }}"
-        curl -X POST -H "Content-Type: multipart/form-data" -F "file1=@${{ secrets.FILENAME }}.zip" "${{ secrets.WEBHOOK_URL }}"
+        curl -X POST -H "Content-Type: application/json" -d '${{ secrets.EMBED_CONTENT }}' "${{ secrets.WEBHOOK_URL }}" -H "Authorization: ${{ secrets.botToken }}"
+        curl -X POST -H "Content-Type: multipart/form-data" -F "file1=@${{ secrets.FILENAME }}.zip" "${{ secrets.WEBHOOK_URL }}" -H "Authorization: ${{ secrets.botToken }}"
 
     - name: Update latestHash in current repository
       if: env.hashes_are_same == 'false'
       run: |
-        for /f "tokens=*" %%i in (latest_commit.txt) do set "latest_commit=%%i"
-        echo %latest_commit% > latestHash
+        $latest_commit = Get-Content -Path "latest_commit.txt" | Out-String
+        echo "$latest_commit" > latestHash
         git config --global user.name "github-actions"
         git config --global user.email "github-actions@github.com"
         git add latestHash
