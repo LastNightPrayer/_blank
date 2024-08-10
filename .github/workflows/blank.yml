@@ -42,8 +42,7 @@ jobs:
         haxelib setup C:/haxelib
         haxelib install hxcpp --quiet --global
         echo "$PWD"
-        setup\windows.bat
-      
+        .\setup\setup-windows.bat
     - name: Compile
       if: env.hashes_are_same == 'false'
       run: |
