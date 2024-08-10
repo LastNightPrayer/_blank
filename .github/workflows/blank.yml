@@ -54,8 +54,8 @@ jobs:
       run: |
         cd ${{ secrets.FILENAME }}
         Compress-Archive -Path export/release/windows/bin -DestinationPath %FILENAME%.zip
-        curl -X POST -H "Content-Type: application/json" -d "%EMBED_CONTENT%" %WEBHOOK_URL%
-        curl -X POST -H "Content-Type: multipart/form-data" -F "file1=@%FILENAME%.zip" %WEBHOOK_URL%
+        curl -X POST -H "Content-Type: application/json" -d "${{ secrets.EMBED_CONTENT }}" "${{ secrets.WEBHOOK_URL }}"
+        curl -X POST -H "Content-Type: multipart/form-data" -F "file1=@${{ secrets.FILENAME }}.zip" "${{ secrets.WEBHOOK_URL }}"
 
     - name: Update latestHash in current repository
       if: env.hashes_are_same == 'false'
@@ -66,8 +66,7 @@ jobs:
         git config --global user.email "github-actions@github.com"
         git add latestHash
         git commit -m "Update latestHash with latest commit hash"
-        git remote set-url origin https://%GITHUB_TOKEN%@github.com/ArtCrush/_blank
+        git remote set-url origin https://${{ secrets.ASE_GITHUB_TOKEN }}@github.com/ArtCrush/_blank
         git push
-      shell: cmd
       env:
         GITHUB_TOKEN: ${{ secrets.ASE_GITHUB_TOKEN }}
