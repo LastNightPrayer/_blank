@@ -53,8 +53,8 @@ jobs:
       if: env.hashes_are_same == 'false'
       run: |
         cd ${{ secrets.FILENAME }}
-        Compress-Archive -Path export/release/windows/bin -DestinationPath %FILENAME%.zip
-        curl -X POST -H "Content-Type: application/json" -d "${{ secrets.EMBED_CONTENT }}" "${{ secrets.WEBHOOK_URL }}"
+        Compress-Archive -Path export/release/windows/bin -DestinationPath ${{ secrets.FILENAME }}.zip
+        curl -X POST -H "Content-Type: application/json" -d '${{ secrets.EMBED_CONTENT }}' "${{ secrets.WEBHOOK_URL }}"
         curl -X POST -H "Content-Type: multipart/form-data" -F "file1=@${{ secrets.FILENAME }}.zip" "${{ secrets.WEBHOOK_URL }}"
 
     - name: Update latestHash in current repository
