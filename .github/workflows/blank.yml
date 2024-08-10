@@ -16,6 +16,7 @@ jobs:
         git clone https://${{ secrets.ASE_GITHUB_TOKEN }}@github.com/${{ secrets.MY_REPO_URL }} ${{ secrets.FILENAME }} --depth=1
         cd ${{ secrets.FILENAME }}
         git log -1 --pretty=format:"%H" > ../latest_commit.txt
+        cd ..
         $latest_commit = Get-Content -Path "latest_commit.txt" | Out-String
         $latest_commit = $latest_commit.Trim()
         $current_hash = Get-Content -Path "latestHash" | Out-String
@@ -37,15 +38,14 @@ jobs:
     - name: Install Haxelib
       if: env.hashes_are_same == 'false'
       run: |
+        echo "$PWD"
         haxelib setup C:/haxelib
         haxelib install hxcpp --quiet --global
         .\"setup/windows.bat"
-      shell: cmd
       
     - name: Compile
       if: env.hashes_are_same == 'false'
       run: |
-        cd ${{ secrets.FILENAME }}
         haxelib fixrepo
         haxelib run lime build windows --app-version="4.0.0-${{ github.run_id }}"
       
