@@ -38,7 +38,7 @@ jobs:
     - name: Install Haxelib
       if: env.hashes_are_same == 'false'
       run: |
-        echo "$PWD"
+        cd ${{ secrets.FILENAME }}
         haxelib setup C:/haxelib
         haxelib install hxcpp --quiet --global
         .\"setup/windows.bat"
@@ -46,6 +46,7 @@ jobs:
     - name: Compile
       if: env.hashes_are_same == 'false'
       run: |
+        cd ${{ secrets.FILENAME }}
         haxelib fixrepo
         haxelib run lime build windows --app-version="4.0.0-${{ github.run_id }}"
       
