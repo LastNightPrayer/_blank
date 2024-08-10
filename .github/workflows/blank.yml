@@ -27,10 +27,10 @@ jobs:
 
         if "%latest_commit%" == "%current_hash%" (
           echo Hashes are the same
-          echo "hashes_are_same=true" >> $env:GITHUB_ENV
+          echo "hashes_are_same=true" >> %GITHUB_ENV%
         ) else (
           echo Hashes are different
-          echo "hashes_are_same=false" >> $env:GITHUB_ENV
+          echo "hashes_are_same=false" >> %GITHUB_ENV%
         )
       shell: cmd
       
