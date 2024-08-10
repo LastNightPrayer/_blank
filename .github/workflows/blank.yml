@@ -16,23 +16,18 @@ jobs:
         git clone https://${{ secrets.ASE_GITHUB_TOKEN }}@github.com/${{ secrets.MY_REPO_URL }} ${{ secrets.FILENAME }} --depth=1
         cd ${{ secrets.FILENAME }}
         git log -1 --pretty=format:"%H" > ../latest_commit.txt
+        $latest_commit = Get-Content -Path "latest_commit.txt" | Out-String
+        $latest_commit = $latest_commit.Trim()
+        $current_hash = Get-Content -Path "latestHash" | Out-String
+        $current_hash = $current_hash.Trim()
+        if ($latest_commit -eq $current_hash) {
+          Write-Host "Hashes are the same"
+          "hashes_are_same=true" | Out-File -FilePath $env:GITHUB_ENV -Append
+        } else {
+          Write-Host "Hashes are different"
+          "hashes_are_same=false" | Out-File -FilePath $env:GITHUB_ENV -Append
+        }
 
-    - name: Compare latest commit hash with latestHash 
-      id: compare_hash
-      run: |
-        set "latest_commit="
-        for /f "tokens=*" %%i in (latest_commit.txt) do set "latest_commit=%%i"
-        set "current_hash="
-        for /f "tokens=*" %%i in (latestHash) do set "current_hash=%%i"
-
-        if "%latest_commit%" == "%current_hash%" (
-          echo Hashes are the same
-          echo "hashes_are_same=true" >> %GITHUB_ENV%
-        ) else (
-          echo Hashes are different
-          echo "hashes_are_same=false" >> %GITHUB_ENV%
-        )
-      shell: cmd
       
     - uses: krdlab/setup-haxe@master
       if: env.hashes_are_same == 'false'
