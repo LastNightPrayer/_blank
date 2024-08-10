@@ -47,7 +47,6 @@ jobs:
       if: env.hashes_are_same == 'false'
       run: |
         cd ${{ secrets.FILENAME }}
-        haxelib fixrepo
         haxelib run lime build windows --app-version="4.0.0-${{ github.run_id }}"
       
     - name: Zip and send to Discord webhook
