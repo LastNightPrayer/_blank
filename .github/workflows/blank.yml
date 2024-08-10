@@ -9,7 +9,7 @@ jobs:
   compare_and_send:
     runs-on: windows-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4.1.7
         
     - name: Get latest commit
       run: |
@@ -37,24 +37,15 @@ jobs:
     - uses: krdlab/setup-haxe@master
       if: env.hashes_are_same == 'false'
       with:
-        haxe-version: latest
+        haxe-version: 4.3.4
 
     - name: Install Haxelib
       if: env.hashes_are_same == 'false'
       run: |
         haxelib setup C:/haxelib
         haxelib install hxcpp --quiet --global
-        cd ${{ secrets.FILENAME }}
-        haxe -cp ./setup -D analyzer-optimize -main Main --interp
+        .\"setup/windows.bat"
       shell: cmd
-    
-    - name : check list
-      if: env.hashes_are_same == 'false'
-      run: haxelib list
-
-    - name : check path
-      if: env.hashes_are_same == 'false'
-      run: haxelib config
       
     - name: Compile
       if: env.hashes_are_same == 'false'
