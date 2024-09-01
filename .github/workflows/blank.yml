@@ -48,14 +48,20 @@ jobs:
         cd ${{ secrets.FILENAME }}
         haxelib run lime build windows --app-version="4.0.0-${{ github.run_id }}"
       
-    - name: Zip and send to Discord webhook
+    - name: Zip and send Discord webhook
       if: env.hashes_are_same == 'false'
       run: |
         cd ${{ secrets.FILENAME }}
         Compress-Archive -Path export/release/windows/bin -DestinationPath ${{ secrets.FILENAME }}.zip
         curl -X POST -H "Content-Type: application/json" -d '${{ secrets.EMBED_CONTENT }}' "${{ secrets.WEBHOOK_URL }}" -H "Authorization: ${{ secrets.botToken }}"
-        curl -X POST -H "Content-Type: multipart/form-data" -F "file1=@${{ secrets.FILENAME }}.zip" "${{ secrets.WEBHOOK_URL }}" -H "Authorization: ${{ secrets.botToken }}"
-
+        
+    - name: Send Google Drive
+      uses: willo32/google-drive-upload-action@v1
+      with:
+        target: ${{ secrets.FILENAME }}/${{ secrets.FILENAME }}.zip
+        credentials: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_CREDENTIALS }}
+        parent_folder_id: ${{ secrets.GOOGLE_DRIVE_FOLDER_ID }}
+    
     - name: Update latestHash in current repository
       if: env.hashes_are_same == 'false'
       run: |
