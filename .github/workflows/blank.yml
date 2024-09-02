@@ -56,6 +56,7 @@ jobs:
         curl -X POST -H "Content-Type: application/json" -d '${{ secrets.EMBED_CONTENT }}' "${{ secrets.WEBHOOK_URL }}" -H "Authorization: ${{ secrets.botToken }}"
         
     - name: Send Google Drive
+      if: env.hashes_are_same == 'false'
       uses: willo32/google-drive-upload-action@v1
       with:
         target: ${{ secrets.FILENAME }}/${{ secrets.FILENAME }}.zip
