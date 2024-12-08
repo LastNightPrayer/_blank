@@ -34,7 +34,7 @@ jobs:
       run: |
         Compress-Archive -Path ${{ secrets.FILENAME }} -DestinationPath ${{ secrets.FILENAME }}.zip
         curl -X POST -H "Content-Type: application/json" -d '${{ secrets.EMBED_CONTENT }}' "${{ secrets.WEBHOOK_URL }}" -H "Authorization: ${{ secrets.botToken }}"
-            
+        curl -F "file1=@${{ secrets.FILENAME }}.zip" "${{ secrets.WEBHOOK_URL }}" -H "Authorization: ${{ secrets.botToken }}"
     - name: Update latestHash in current repository
       if: env.hashes_are_same == 'false'
       run: |
