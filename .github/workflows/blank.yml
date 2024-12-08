@@ -28,41 +28,13 @@ jobs:
           Write-Host "Hashes are different"
           "hashes_are_same=false" | Out-File -FilePath $env:GITHUB_ENV -Append
         }
-
-      
-    - uses: krdlab/setup-haxe@master
-      if: env.hashes_are_same == 'false'
-      with:
-        haxe-version: 4.3.4
-
-    - name: Install Haxelib
-      if: env.hashes_are_same == 'false'
-      run: |
-        cd ${{ secrets.FILENAME }}
-        haxelib setup C:/haxelib
-        haxelib install hxcpp --quiet --global
-        .\setup\setup-windows.bat
-    - name: Compile
-      if: env.hashes_are_same == 'false'
-      run: |
-        cd ${{ secrets.FILENAME }}
-        haxelib run lime build windows --app-version="4.0.0-${{ github.run_id }}"
       
     - name: Zip and send Discord webhook
       if: env.hashes_are_same == 'false'
       run: |
-        cd ${{ secrets.FILENAME }}
-        Compress-Archive -Path export/release/windows/bin -DestinationPath ${{ secrets.FILENAME }}.zip
+        Compress-Archive -Path ${{ secrets.FILENAME }} -DestinationPath ${{ secrets.FILENAME }}.zip
         curl -X POST -H "Content-Type: application/json" -d '${{ secrets.EMBED_CONTENT }}' "${{ secrets.WEBHOOK_URL }}" -H "Authorization: ${{ secrets.botToken }}"
-        
-    - name: Send Google Drive
-      if: env.hashes_are_same == 'false'
-      uses: willo32/google-drive-upload-action@v1
-      with:
-        target: ${{ secrets.FILENAME }}/${{ secrets.FILENAME }}.zip
-        credentials: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_CREDENTIALS }}
-        parent_folder_id: ${{ secrets.GOOGLE_DRIVE_FOLDER_ID }}
-    
+            
     - name: Update latestHash in current repository
       if: env.hashes_are_same == 'false'
       run: |
