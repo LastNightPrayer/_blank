@@ -29,13 +29,13 @@ jobs:
         fi
     - uses: edgarrc/action-7z@v1
       with:
-        args: 7z a -t7z -mx=9 ${{ secrets.FILENAME }}.7z ./${{ secrets.FILENAME }}
+        args: 7z a -t7z -mx=9 ${{ secrets.FILENAME }}.7z ./${{ secrets.FILENAME }}/*
         
     - name: Zip and send Discord webhook
       if: env.hashes_are_same == 'false'
       run: |
         curl -X POST -H "Content-Type: application/json" -d '${{ secrets.EMBED_CONTENT }}' "${{ secrets.WEBHOOK_URL }}" -H "Authorization: ${{ secrets.botToken }}"
-        curl -F "file1=@${{ secrets.FILENAME }}.zip" "${{ secrets.WEBHOOK_URL }}" -H "Authorization: ${{ secrets.botToken }}"
+        curl -F "file1=@${{ secrets.FILENAME }}.7z" "${{ secrets.WEBHOOK_URL }}" -H "Authorization: ${{ secrets.botToken }}"
     - name: Update latestHash in current repository
       if: env.hashes_are_same == 'false'
       run: |
