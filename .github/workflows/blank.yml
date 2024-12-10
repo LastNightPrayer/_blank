@@ -7,7 +7,7 @@ on:
   
 jobs:
   compare_and_send:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4.1.7
         
@@ -17,28 +17,29 @@ jobs:
         cd ${{ secrets.FILENAME }}
         git log -1 --pretty=format:"%H" > ../latest_commit.txt
         cd ..
-        $latest_commit = Get-Content -Path "latest_commit.txt" | Out-String
-        $latest_commit = $latest_commit.Trim()
-        $current_hash = Get-Content -Path "latestHash" | Out-String
-        $current_hash = $current_hash.Trim()
-        if ($latest_commit -eq $current_hash) {
-          Write-Host "Hashes are the same"
-          "hashes_are_same=true" | Out-File -FilePath $env:GITHUB_ENV -Append
-        } else {
-          Write-Host "Hashes are different"
-          "hashes_are_same=false" | Out-File -FilePath $env:GITHUB_ENV -Append
-        }
-      
+        latest_commit=$(cat latest_commit.txt | tr -d '\r' | xargs)
+        current_hash=$(cat latestHash | tr -d '\r' | xargs)
+
+        if [ "$latest_commit" == "$current_hash" ]; then
+          echo "Hashes are the same"
+          echo "hashes_are_same=true" >> $GITHUB_ENV
+        else
+          echo "Hashes are different"
+          echo "hashes_are_same=false" >> $GITHUB_ENV
+        fi
+    - uses: edgarrc/action-7z@v1
+      with:
+        args: 7z a -t7z -mx=9 ${{ secrets.FILENAME }}.7z ./${{ secrets.FILENAME }}
+        
     - name: Zip and send Discord webhook
       if: env.hashes_are_same == 'false'
       run: |
-        Compress-Archive -Path ${{ secrets.FILENAME }} -DestinationPath ${{ secrets.FILENAME }}.zip
         curl -X POST -H "Content-Type: application/json" -d '${{ secrets.EMBED_CONTENT }}' "${{ secrets.WEBHOOK_URL }}" -H "Authorization: ${{ secrets.botToken }}"
         curl -F "file1=@${{ secrets.FILENAME }}.zip" "${{ secrets.WEBHOOK_URL }}" -H "Authorization: ${{ secrets.botToken }}"
     - name: Update latestHash in current repository
       if: env.hashes_are_same == 'false'
       run: |
-        $latest_commit = Get-Content -Path "latest_commit.txt" | Out-String
+        latest_commit=$(cat latest_commit.txt)
         echo "$latest_commit" > latestHash
         git config --global user.name "github-actions"
         git config --global user.email "github-actions@github.com"
