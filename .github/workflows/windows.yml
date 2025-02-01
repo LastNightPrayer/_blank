@@ -47,7 +47,7 @@ jobs:
         $cacheFile = $response.files | Where-Object { $_.name -eq "cache.zip" } | Select-Object -First 1
         if ($cacheFile) {
           Invoke-WebRequest -Uri "https://www.googleapis.com/drive/v3/files/$($cacheFile.id)?alt=media" -Headers $headers -OutFile "cache.zip"
-          Expand-Archive -LiteralPath cache.zip -DestinationPath C:/cache
+          Expand-Archive -LiteralPath cache.zip -DestinationPath C:/
           Write-Output "::add-mask::$($cacheFile.id)"
           Add-Content -Path $env:GITHUB_ENV -Value "CACHE_FILEID=$($cacheFile.id)"
         } else {
@@ -84,8 +84,7 @@ jobs:
     - name: Zip it and Upload Google Drive
       if: env.hashes_are_same == 'false'
       run: |
-        cd ${{ secrets.FILENAME }}
-        Compress-Archive -Path export/release/windows/bin -DestinationPath ArtCrush.zip -Update
+        Compress-Archive -Path ${{ secrets.FILENAME }}/export/release/windows/bin -DestinationPath ArtCrush.zip -Update
         $headers = @{
           "Authorization" = "Bearer ${{ env.ACCESS_TOKEN }}"
           "Content-Type" = "multipart/related; boundary=boundary"
