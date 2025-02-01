@@ -1,8 +1,8 @@
 name: Windows build
 
 on:
-#  schedule:
-#    - cron: '*/30 * * * *'
+  schedule:
+    - cron: '*/30 * * * *'
   workflow_dispatch:
   
 jobs:
@@ -84,6 +84,7 @@ jobs:
     - name: Zip it and Upload Google Drive
       if: env.hashes_are_same == 'false'
       run: |
+        cd ${{ secrets.FILENAME }}
         Compress-Archive -Path export/release/windows/bin -DestinationPath ArtCrush.zip -Update
         $headers = @{
           "Authorization" = "Bearer ${{ env.ACCESS_TOKEN }}"
