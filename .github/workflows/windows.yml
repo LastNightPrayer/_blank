@@ -29,9 +29,9 @@ jobs:
       if: env.hashes_are_same == 'false'
       run: |
         $body = @{
-            "client_id" = ${{ secrets.CLIENT_ID }}
-            "client_secret" = ${{secrets.CLIENT_SECRET}}
-            "refresh_token" = ${{secrets.REFRESH_TOKEN}}
+            "client_id" = "${{ secrets.CLIENT_ID }}"
+            "client_secret" = "${{ secrets.CLIENT_SECRET }}"
+            "refresh_token" = "${{ secrets.REFRESH_TOKEN }}"
             "grant_type" = "refresh_token"
         }
         $response = Invoke-RestMethod -Uri "https://www.googleapis.com/oauth2/v4/token" -Body $body -Method POST
@@ -61,7 +61,7 @@ jobs:
         cd ${{ secrets.FILENAME }}
         haxelib setup C:/haxelib
         haxelib install hxcpp --quiet --global
-        .\setup\setup-windows.bat
+        .\setup\windows.bat
     - name: Compile
       if: env.hashes_are_same == 'false'
       run: |
