@@ -37,10 +37,12 @@ jobs:
         $response = Invoke-RestMethod -Uri "https://www.googleapis.com/oauth2/v4/token" -Body $body -Method POST
         Add-Content -Path $env:GITHUB_ENV -Value "ACCESS_TOKEN=$($response.access_token)"
     - name: Check for and import your Google Drive cache
+      env:
+        access_token: ${{ secrets.ACCESS_TOKEN }}
       if: env.hashes_are_same == 'false'
       run: |
         $headers = @{
-          "Authorization" = "Bearer ${{ secrets.ACCESS_TOKEN }}"
+          "Authorization" = "Bearer $access_token"
         }
         $response = Invoke-RestMethod -Uri "https://www.googleapis.com/drive/v3/files" -Method Get -Headers $headers
         $cacheFile = $response.files | Where-Object { $_.name -eq "cache.zip" } | Select-Object -First 1
@@ -68,10 +70,12 @@ jobs:
         cd ${{ secrets.FILENAME }}
         haxelib run lime build windows --app-version="4.0.0-${{ github.run_id }}" -useCache
     - name: Check latest Build file and get FileID
+      env:
+        access_token: ${{ secrets.ACCESS_TOKEN }}
       if: env.hashes_are_same == 'false'
       run: |
         $headers = @{
-          "Authorization" = "Bearer ${{ secrets.ACCESS_TOKEN }}"
+          "Authorization" = "Bearer $access_token"
         }
         $response = Invoke-RestMethod -Uri "https://www.googleapis.com/drive/v3/files" -Method Get -Headers $headers
         $ArtCrushFile = $response.files | Where-Object { $_.name -eq "ArtCrush.zip" } | Select-Object -First 1
@@ -81,11 +85,12 @@ jobs:
     - name: Zip it and Upload Google Drive
       env:
         fileId: ${{ secrets.UPLOADED_FILEID }}
+        access_token: ${{ secrets.ACCESS_TOKEN }}
       if: env.hashes_are_same == 'false'
       run: |
         Compress-Archive -Path export/release/windows/bin -DestinationPath ArtCrush.zip -Update
         $headers = @{
-          "Authorization" = "Bearer ${{ secrets.access_token }}"
+          "Authorization" = "Bearer $access_token"
           "Content-Type" = "multipart/related; boundary=boundary"
         }
         $metadata = @{
@@ -117,7 +122,7 @@ jobs:
         
         $response = Invoke-RestMethod -Method $method -Headers $headers -Uri $uri -Body $body
 
-        Invoke-RestMethod -Method POST -Headers {"Authorization"="Bearer ${{ secrets.ACCESS_TOKEN }}"} -Uri "https://www.googleapis.com/drive/v3/files/${response.id}/permissions" -Body "{\"role\": \"reader\",\"type\": \"anyone\"}" | Out-Null
+        Invoke-RestMethod -Method POST -Headers {"Authorization"="Bearer $access_token"} -Uri "https://www.googleapis.com/drive/v3/files/${response.id}/permissions" -Body "{\"role\": \"reader\",\"type\": \"anyone\"}" | Out-Null
 
     - name: Send Discord Webhook
       if: env.hashes_are_same == 'false'
@@ -127,11 +132,12 @@ jobs:
     - name: Upload the last cache built
       env:
         cache_fileid: ${{ secrets.CACHE_FILEID }}
+        access_token: ${{ secrets.ACCESS_TOKEN }}
       if: env.hashes_are_same == 'false'
       run: |
         Compress-Archive -Path C:/cache -DestinationPath cache.zip -Update
         $headers = @{
-          "Authorization" = "Bearer ${{ secrets.access_token }}"
+          "Authorization" = "Bearer $access_token"
           "Content-Type" = "multipart/related; boundary=boundary"
         }
         $metadata = @{
