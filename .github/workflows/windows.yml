@@ -1,0 +1,30 @@
+name: Windows build
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+  
+jobs:
+  WindowsBuild:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v4.1.7
+    - name: Get latest commit
+      run: |
+        git clone https://${{ secrets.ASE_GITHUB_TOKEN }}@github.com/${{ secrets.MY_REPO_URL }} ${{ secrets.FILENAME }} --depth=1
+        cd ${{ secrets.FILENAME }}
+        git log -1 --pretty=format:"%H" > ../latest_commit.txt
+        cd ..
+        $latest_commit = (Get-Content "latest_commit.txt" | ForEach-Object { $_.Trim() }) -join ''
+        $current_hash = (Get-Content "latestHash" | ForEach-Object { $_.Trim() }) -join ''
+        if ($latest_commit -eq $current_hash) {
+          Write-Output "Hashes are the same"
+          Add-Content -Path $env:GITHUB_ENV -Value "hashes_are_same=true"
+        } else {
+          Write-Output "Hashes are different"
+          Add-Content -Path $env:GITHUB_ENV -Value "hashes_are_same=false"
+        }
+    - name: Test
+    - run: |
+        Write-Output ${{env.hashes_are_same}}
