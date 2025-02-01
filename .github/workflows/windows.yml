@@ -35,6 +35,7 @@ jobs:
             "grant_type" = "refresh_token"
         }
         $response = Invoke-RestMethod -Uri "https://www.googleapis.com/oauth2/v4/token" -Body $body -Method POST
+        Write-Output "::add-mask::$($response.access_token)"
         Add-Content -Path $env:GITHUB_ENV -Value "ACCESS_TOKEN=$($response.access_token)"
     - name: Check for and import your Google Drive cache
       if: env.hashes_are_same == 'false'
@@ -47,6 +48,7 @@ jobs:
         if ($cacheFile) {
           Invoke-WebRequest -Uri "https://www.googleapis.com/drive/v3/files/$($cacheFile.id)?alt=media" -Headers $headers -OutFile "cache.zip"
           Expand-Archive -LiteralPath cache.zip -DestinationPath C:/cache
+          Write-Output "::add-mask::$($cacheFile.id)"
           Add-Content -Path $env:GITHUB_ENV -Value "CACHE_FILEID=$($cacheFile.id)"
         } else {
           New-Item C:/cache -ItemType Directory
@@ -76,6 +78,7 @@ jobs:
         $response = Invoke-RestMethod -Uri "https://www.googleapis.com/drive/v3/files" -Method Get -Headers $headers
         $ArtCrushFile = $response.files | Where-Object { $_.name -eq "ArtCrush.zip" } | Select-Object -First 1
         if ($ArtCrushFile) {
+          Write-Output "::add-mask::$($ArtCrushFile.id)"
           Add-Content -Path $env:GITHUB_ENV -Value "UPLOADED_FILEID=$($ArtCrushFile.id)"
         }
     - name: Zip it and Upload Google Drive
@@ -118,6 +121,7 @@ jobs:
 
         Invoke-RestMethod -Method POST -Headers {"Authorization"="Bearer ${{ env.ACCESS_TOKEN }}"} -Uri "https://www.googleapis.com/drive/v3/files/${response.id}/permissions" -Body "{\"role\": \"reader\",\"type\": \"anyone\"}" | Out-Null
         if (-not $fileId) {
+          Write-Output "::add-mask::$($response.id)"
           Add-Content -Path $env:GITHUB_ENV -Value "UPLOADED_FILEID=$($response.id)"
         }
 
