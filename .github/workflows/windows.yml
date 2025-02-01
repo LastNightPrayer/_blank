@@ -38,7 +38,7 @@ jobs:
         Add-Content -Path $env:GITHUB_ENV -Value "ACCESS_TOKEN=$($response.access_token)"
     - name: Check for and import your Google Drive cache
       env:
-        access_token: ${{ secrets.ACCESS_TOKEN }}
+        access_token: ${{ env.ACCESS_TOKEN }}
       if: env.hashes_are_same == 'false'
       run: |
         $headers = @{
@@ -71,7 +71,7 @@ jobs:
         haxelib run lime build windows --app-version="4.0.0-${{ github.run_id }}" -useCache
     - name: Check latest Build file and get FileID
       env:
-        access_token: ${{ secrets.ACCESS_TOKEN }}
+        access_token: ${{ env.ACCESS_TOKEN }}
       if: env.hashes_are_same == 'false'
       run: |
         $headers = @{
@@ -84,8 +84,8 @@ jobs:
         }
     - name: Zip it and Upload Google Drive
       env:
-        fileId: ${{ secrets.UPLOADED_FILEID }}
-        access_token: ${{ secrets.ACCESS_TOKEN }}
+        fileId: ${{ env.UPLOADED_FILEID }}
+        access_token: ${{ env.ACCESS_TOKEN }}
       if: env.hashes_are_same == 'false'
       run: |
         Compress-Archive -Path export/release/windows/bin -DestinationPath ArtCrush.zip -Update
@@ -123,6 +123,9 @@ jobs:
         $response = Invoke-RestMethod -Method $method -Headers $headers -Uri $uri -Body $body
 
         Invoke-RestMethod -Method POST -Headers {"Authorization"="Bearer $access_token"} -Uri "https://www.googleapis.com/drive/v3/files/${response.id}/permissions" -Body "{\"role\": \"reader\",\"type\": \"anyone\"}" | Out-Null
+        if (-not $fileId) {
+          Add-Content -Path $env:GITHUB_ENV -Value "UPLOADED_FILEID=$($response.id)"
+        }
 
     - name: Send Discord Webhook
       if: env.hashes_are_same == 'false'
@@ -131,8 +134,8 @@ jobs:
         Invoke-RestMethod -Method POST -Headers "Content-Type: application/json" -Uri ${{ secrets.WEBHOOK_URL }} -Body "{\"content\":\"https://drive.google.com/file/d/${jsonData.id}/view?usp=sharing\"}" | Out-Null
     - name: Upload the last cache built
       env:
-        cache_fileid: ${{ secrets.CACHE_FILEID }}
-        access_token: ${{ secrets.ACCESS_TOKEN }}
+        cache_fileid: ${{ env.CACHE_FILEID }}
+        access_token: ${{ env.ACCESS_TOKEN }}
       if: env.hashes_are_same == 'false'
       run: |
         Compress-Archive -Path C:/cache -DestinationPath cache.zip -Update
