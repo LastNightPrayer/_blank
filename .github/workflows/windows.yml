@@ -119,7 +119,7 @@ jobs:
         
         $response = Invoke-RestMethod -Method $method -Headers $headers -Uri $uri -Body $body
 
-        Invoke-RestMethod -Method POST -Headers {"Authorization"="Bearer ${{ env.ACCESS_TOKEN }}"} -Uri "https://www.googleapis.com/drive/v3/files/${response.id}/permissions" -Body "{\"role\": \"reader\",\"type\": \"anyone\"}" | Out-Null
+        Invoke-RestMethod -Method POST -Headers @{"Authorization"="Bearer ${{ env.ACCESS_TOKEN }}"} -Uri "https://www.googleapis.com/drive/v3/files/${response.id}/permissions" -Body "{\"role\": \"reader\",\"type\": \"anyone\"}" | Out-Null
         if (-not $fileId) {
           Write-Output "::add-mask::$($response.id)"
           Add-Content -Path $env:GITHUB_ENV -Value "UPLOADED_FILEID=$($response.id)"
