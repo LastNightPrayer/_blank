@@ -111,7 +111,7 @@ jobs:
         "@
         $fileId = "${{ env.UPLOADED_FILEID }}"
         $uri = if ($fileId) {
-          "https://www.googleapis.com/upload/drive/v3/files/$fileId?uploadType=multipart"
+          "https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=multipart"
         } else {
           "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart"
         }
