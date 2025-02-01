@@ -37,12 +37,10 @@ jobs:
         $response = Invoke-RestMethod -Uri "https://www.googleapis.com/oauth2/v4/token" -Body $body -Method POST
         Add-Content -Path $env:GITHUB_ENV -Value "ACCESS_TOKEN=$($response.access_token)"
     - name: Check for and import your Google Drive cache
-      env:
-        access_token: ${{ env.ACCESS_TOKEN }}
       if: env.hashes_are_same == 'false'
       run: |
         $headers = @{
-          "Authorization" = "Bearer $access_token"
+          "Authorization" = "Bearer ${{ env.ACCESS_TOKEN }}"
         }
         $response = Invoke-RestMethod -Uri "https://www.googleapis.com/drive/v3/files" -Method Get -Headers $headers
         $cacheFile = $response.files | Where-Object { $_.name -eq "cache.zip" } | Select-Object -First 1
@@ -70,12 +68,10 @@ jobs:
         cd ${{ secrets.FILENAME }}
         haxelib run lime build windows --app-version="4.0.0-${{ github.run_id }}" -useCache
     - name: Check latest Build file and get FileID
-      env:
-        access_token: ${{ env.ACCESS_TOKEN }}
       if: env.hashes_are_same == 'false'
       run: |
         $headers = @{
-          "Authorization" = "Bearer $access_token"
+          "Authorization" = "Bearer ${{ env.ACCESS_TOKEN }}"
         }
         $response = Invoke-RestMethod -Uri "https://www.googleapis.com/drive/v3/files" -Method Get -Headers $headers
         $ArtCrushFile = $response.files | Where-Object { $_.name -eq "ArtCrush.zip" } | Select-Object -First 1
@@ -83,14 +79,11 @@ jobs:
           Add-Content -Path $env:GITHUB_ENV -Value "UPLOADED_FILEID=$($ArtCrushFile.id)"
         }
     - name: Zip it and Upload Google Drive
-      env:
-        fileId: ${{ env.UPLOADED_FILEID }}
-        access_token: ${{ env.ACCESS_TOKEN }}
       if: env.hashes_are_same == 'false'
       run: |
         Compress-Archive -Path export/release/windows/bin -DestinationPath ArtCrush.zip -Update
         $headers = @{
-          "Authorization" = "Bearer $access_token"
+          "Authorization" = "Bearer ${{ env.ACCESS_TOKEN }}"
           "Content-Type" = "multipart/related; boundary=boundary"
         }
         $metadata = @{
@@ -113,6 +106,7 @@ jobs:
 
         --boundary--
         "@
+        $fileId = "${{ env.UPLOADED_FILEID }}"
         $uri = if ($fileId) {
           "https://www.googleapis.com/upload/drive/v3/files/$fileId?uploadType=multipart"
         } else {
@@ -122,7 +116,7 @@ jobs:
         
         $response = Invoke-RestMethod -Method $method -Headers $headers -Uri $uri -Body $body
 
-        Invoke-RestMethod -Method POST -Headers {"Authorization"="Bearer $access_token"} -Uri "https://www.googleapis.com/drive/v3/files/${response.id}/permissions" -Body "{\"role\": \"reader\",\"type\": \"anyone\"}" | Out-Null
+        Invoke-RestMethod -Method POST -Headers {"Authorization"="Bearer ${{ env.ACCESS_TOKEN }}"} -Uri "https://www.googleapis.com/drive/v3/files/${response.id}/permissions" -Body "{\"role\": \"reader\",\"type\": \"anyone\"}" | Out-Null
         if (-not $fileId) {
           Add-Content -Path $env:GITHUB_ENV -Value "UPLOADED_FILEID=$($response.id)"
         }
@@ -133,14 +127,11 @@ jobs:
         Invoke-RestMethod -Method POST -Headers "Content-Type: application/json" -Uri ${{ secrets.WEBHOOK_URL }} -Body ${{ secrets.EMBED_CONTENT }} | Out-Null
         Invoke-RestMethod -Method POST -Headers "Content-Type: application/json" -Uri ${{ secrets.WEBHOOK_URL }} -Body "{\"content\":\"https://drive.google.com/file/d/${jsonData.id}/view?usp=sharing\"}" | Out-Null
     - name: Upload the last cache built
-      env:
-        cache_fileid: ${{ env.CACHE_FILEID }}
-        access_token: ${{ env.ACCESS_TOKEN }}
       if: env.hashes_are_same == 'false'
       run: |
         Compress-Archive -Path C:/cache -DestinationPath cache.zip -Update
         $headers = @{
-          "Authorization" = "Bearer $access_token"
+          "Authorization" = "Bearer ${{ env.ACCESS_TOKEN }}"
           "Content-Type" = "multipart/related; boundary=boundary"
         }
         $metadata = @{
@@ -163,8 +154,8 @@ jobs:
 
         --boundary--
         "@
-        if ($env:cache_fileid) {
-          Invoke-RestMethod -Method PATCH -Headers $headers -Uri "https://www.googleapis.com/upload/drive/v3/files/$cache_fileid?uploadType=multipart" -Body $body | Out-Null
+        if (${{ env.CACHE_FILEID }}) {
+          Invoke-RestMethod -Method PATCH -Headers $headers -Uri "https://www.googleapis.com/upload/drive/v3/files/${{ env.CACHE_FILEID }}?uploadType=multipart" -Body $body | Out-Null
         } else {
           Invoke-RestMethod -Method POST -Headers $headers -Uri "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart" -Body $body | Out-Null
         }
