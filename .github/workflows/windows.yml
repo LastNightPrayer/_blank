@@ -25,6 +25,15 @@ jobs:
           Write-Output "Hashes are different"
           Add-Content -Path $env:GITHUB_ENV -Value "hashes_are_same=false"
         }
-    - name: Test
+    - name: Update latestHash in current repository
+      if: env.hashes_are_same == 'false'
       run: |
-        Write-Output ${{env.hashes_are_same}}
+        cd $GITHUB_WORKSPACE
+        (Get-Content "latest_commit.txt" | ForEach-Object { $_.Trim() }) -join '' | Out-File -FilePath "latestHash" -Force
+        git config --global user.name "github-actions"
+        git config --global user.email "github-actions@github.com"
+        git add latestHash
+        $current_date = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+        git commit -m "Update latestHash at $current_date"
+        git remote set-url origin https://${{ secrets.ASE_GITHUB_TOKEN }}@github.com/ArtCrush/_blank
+        git push
