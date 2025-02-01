@@ -1,8 +1,8 @@
 name: Windows build
 
 on:
-  schedule:
-    - cron: '*/30 * * * *'
+#  schedule:
+#    - cron: '*/30 * * * *'
   workflow_dispatch:
   
 jobs:
@@ -26,5 +26,5 @@ jobs:
           Add-Content -Path $env:GITHUB_ENV -Value "hashes_are_same=false"
         }
     - name: Test
-    - run: |
+      run: |
         Write-Output ${{env.hashes_are_same}}
