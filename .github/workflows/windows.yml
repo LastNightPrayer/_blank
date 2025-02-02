@@ -94,21 +94,18 @@ jobs:
         } | ConvertTo-Json
         
         $fileBytes = [System.IO.File]::ReadAllBytes("ArtCrush.zip");
-        $fileEnc = [System.Text.Encoding]::GetEncoding('ISO-8859-1').GetString($fileBytes)
-        $body = @"
-        --boundary
-        Content-Type: application/json; charset=UTF-8
-
-        $metadata
-
-        --boundary
-        Content-Type: application/octet-stream
-        Content-Disposition: form-data; name="file"; filename="ArtCrush.zip"
-
-        $fileEnc
-
-        --boundary--
-        "@
+        $body = @(
+          "--boundary",
+          "Content-Type: application/json; charset=UTF-8",
+          "",
+          $metadata,
+          "--boundary",
+          "Content-Type: application/octet-stream",
+          "Content-Transfer-Encoding: base64",
+          "",
+          [Convert]::ToBase64String($fileBytes),
+          "--boundary--"
+        ) -join "`r`n"
         $fileId = "${{ env.UPLOADED_FILEID }}"
         $uri = if ($fileId) {
           "https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=multipart"
@@ -158,21 +155,18 @@ jobs:
         } | ConvertTo-Json
         
         $fileBytes = [System.IO.File]::ReadAllBytes("cache.zip");
-        $fileEnc = [System.Text.Encoding]::GetEncoding('ISO-8859-1').GetString($fileBytes)
-        $body = @"
-        --boundary
-        Content-Type: application/json; charset=UTF-8
-
-        $metadata
-
-        --boundary
-        Content-Type: application/octet-stream
-        Content-Disposition: form-data; name="file"; filename="cache.zip"
-
-        $fileEnc
-
-        --boundary--
-        "@
+        $body = @(
+          "--boundary",
+          "Content-Type: application/json; charset=UTF-8",
+          "",
+          $metadata,
+          "--boundary",
+          "Content-Type: application/octet-stream",
+          "Content-Transfer-Encoding: base64",
+          "",
+          [Convert]::ToBase64String($fileBytes),
+          "--boundary--"
+        ) -join "`r`n"
         $fileId = "${{ env.CACHE_FILEID }}"
         $uri = if ($fileId) {
           "https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=multipart"
