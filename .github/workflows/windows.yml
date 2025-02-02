@@ -68,7 +68,7 @@ jobs:
       if: env.hashes_are_same == 'false'
       run: |
         cd ${{ secrets.FILENAME }}
-        haxelib run lime build windows --app-version="4.0.0-${{ github.run_id }}" -useCache
+        haxelib run lime build windows --app-version="4.0.0-${{ github.run_id }}" -DHXCPP_COMPILE_CACHE=C:/cache
     - name: Check latest Build file and get FileID
       if: env.hashes_are_same == 'false'
       run: |
