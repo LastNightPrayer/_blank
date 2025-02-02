@@ -144,7 +144,7 @@ jobs:
             }
           )
         } | ConvertTo-Json
-        Invoke-RestMethod -Method POST -Headers "Content-Type: application/json" -Uri ${{ secrets.WEBHOOK_URL }} -Body $body | Out-Null
+        Invoke-RestMethod -Method POST -Headers @{"Content-Type"= "application/json"} -Uri ${{ secrets.WEBHOOK_URL }} -Body $body | Out-Null
     - name: Upload the last cache built
       if: env.hashes_are_same == 'false'
       run: |
