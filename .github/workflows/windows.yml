@@ -185,7 +185,7 @@ jobs:
     - name: Update latestHash in current repository
       if: env.hashes_are_same == 'false'
       run: |
-        cd $GITHUB_WORKSPACE
+        cd ${{ github.workspace }}
         (Get-Content "latest_commit.txt" | ForEach-Object { $_.Trim() }) -join '' | Out-File -FilePath "latestHash" -Force
         git config --global user.name "github-actions"
         git config --global user.email "github-actions@github.com"
