@@ -135,8 +135,15 @@ jobs:
       run: |
         $body = @{
           content = "바로가기(<https://drive.google.com/file/d/${{ env.UPLOADED_FILEID }}/view?usp=sharing>)"
-        }
-        Invoke-RestMethod -Method POST -Headers "Content-Type: application/json" -Uri ${{ secrets.WEBHOOK_URL }} -Body ${{ secrets.EMBED_CONTENT }} | Out-Null
+          embeds = @(
+            @{
+              id = 652627557
+              title = "New Version Updated.
+              description = "ArtCrush File Update!"
+              color = 4067891
+            }
+          )
+        } | ConvertTo-Json
         Invoke-RestMethod -Method POST -Headers "Content-Type: application/json" -Uri ${{ secrets.WEBHOOK_URL }} -Body $body | Out-Null
     - name: Upload the last cache built
       if: env.hashes_are_same == 'false'
