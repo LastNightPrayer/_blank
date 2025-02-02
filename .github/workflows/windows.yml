@@ -138,8 +138,8 @@ jobs:
           embeds = @(
             @{
               id = 652627557
-              title = "New Version Updated.
-              description = "ArtCrush File Update!"
+              title = "New Version Updated."
+              description = "File Update!"
               color = 4067891
             }
           )
