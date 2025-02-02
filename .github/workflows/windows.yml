@@ -134,7 +134,7 @@ jobs:
       if: env.hashes_are_same == 'false'
       run: |
         $body = @{
-          content = "바로가기(<https://drive.google.com/file/d/${{ env.UPLOADED_FILEID }}/view?usp=sharing>)"
+          content = "[바로가기](<https://drive.google.com/file/d/${{ env.UPLOADED_FILEID }}/view?usp=sharing>)"
           embeds = @(
             @{
               id = 652627557
@@ -173,11 +173,15 @@ jobs:
 
         --boundary--
         "@
-        if (${{ env.CACHE_FILEID }}) {
-          Invoke-RestMethod -Method PATCH -Headers $headers -Uri "https://www.googleapis.com/upload/drive/v3/files/${{ env.CACHE_FILEID }}?uploadType=multipart" -Body $body | Out-Null
+        $fileId = "${{ env.CACHE_FILEID }}"
+        $uri = if ($fileId) {
+          "https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=multipart"
         } else {
-          Invoke-RestMethod -Method POST -Headers $headers -Uri "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart" -Body $body | Out-Null
+          "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart"
         }
+        $method = if ($fileId) { "PATCH" } else { "POST" }
+        
+        $response = Invoke-RestMethod -Method $method -Headers $headers -Uri $uri -Body $body
     - name: Update latestHash in current repository
       if: env.hashes_are_same == 'false'
       run: |
