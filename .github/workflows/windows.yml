@@ -54,7 +54,7 @@ jobs:
     - uses: krdlab/setup-haxe@master
       if: env.hashes_are_same == 'false'
       with:
-        haxe-version: 4.3.4
+        haxe-version: 4.3.6
     - name: Install Haxelib
       if: env.hashes_are_same == 'false'
       run: |
