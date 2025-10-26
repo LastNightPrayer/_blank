@@ -2,27 +2,62 @@ name: Windows build
 
 on:
   workflow_dispatch:
-  
+    inputs:
+      branch:
+        description: '빌드할 브랜치 이름'
+        required: true
+        default: 'main'
+        type: string
+
+permissions:
+  contents: write
+
 jobs:
   WindowsBuild:
     runs-on: windows-2022
     steps:
     - uses: actions/checkout@v4.1.7
-    - name: Get latest commit
+        
+    - name: Get latest commit and check hash
       run: |
-        git clone https://${{ secrets.ASE_GITHUB_TOKEN }}@github.com/${{ secrets.MY_REPO_URL }} ${{ secrets.FILENAME }} --depth=1
-        cd ${{ secrets.FILENAME }}
-        git log -1 --pretty=format:"%H" > ../latest_commit.txt
+        $jsonFilePath = "latest_commits.json"
+        $branchName = "${{ inputs.branch }}"
+        $cloneDir = "${{ inputs.branch }}"
+        
+        git clone https://${{ secrets.ASE_GITHUB_TOKEN }}@github.com/${{ secrets.MY_REPO_URL }} $cloneDir --depth=1 --branch $branchName
+        cd $cloneDir
+        $latest_commit = (git log -1 --pretty=format:"%H").Trim()
         cd ..
-        $latest_commit = (Get-Content "latest_commit.txt" | ForEach-Object { $_.Trim() }) -join ''
-        $current_hash = (Get-Content "latestHash" | ForEach-Object { $_.Trim() }) -join ''
-        if ($latest_commit -eq $current_hash) {
-          Write-Output "Hashes are the same"
-          Add-Content -Path $env:GITHUB_ENV -Value "hashes_are_same=true"
-        } else {
-          Write-Output "Hashes are different"
-          Add-Content -Path $env:GITHUB_ENV -Value "hashes_are_same=false"
+        
+        Write-Output "Latest commit hash for $branchName is $latest_commit"
+        Add-Content -Path $env:GITHUB_ENV -Value "LATEST_COMMIT_HASH=$latest_commit"
+
+        $hashesHashtable = @{}
+        if (Test-Path $jsonFilePath) {
+            try {
+                $jsonContent = Get-Content $jsonFilePath -Raw
+                if ($jsonContent.Trim()) {
+                    $hashesHashtable = $jsonContent | ConvertFrom-Json -AsHashtable
+                }
+            } catch {
+                 Write-Warning "Could not parse $jsonFilePath. Re-initializing."
+                 $hashesHashtable = @{}
+            }
         }
+        
+        $current_hash = $null
+        if ($hashesHashtable.ContainsKey($branchName)) {
+            $current_hash = $hashesHashtable[$branchName]
+        }
+        
+        if ($latest_commit -eq $current_hash) {
+            Write-Output "Hashes are the same for branch $branchName"
+            Add-Content -Path $env:GITHUB_ENV -Value "hashes_are_same=true"
+        } else {
+            Write-Output "Hashes are different for branch $branchName. New: $latest_commit, Old: $current_hash"
+            Add-Content -Path $env:GITHUB_ENV -Value "hashes_are_same=false"
+        }
+
     - name: Get Access Token using Refresh Token
       if: env.hashes_are_same == 'false'
       run: |
@@ -35,38 +70,44 @@ jobs:
         $response = Invoke-RestMethod -Uri "https://www.googleapis.com/oauth2/v4/token" -Body $body -Method POST
         Write-Output "::add-mask::$($response.access_token)"
         Add-Content -Path $env:GITHUB_ENV -Value "ACCESS_TOKEN=$($response.access_token)"
-    - name: Check for and import your Google Drive cache
-      if: env.hashes_are_same == 'false'
-      run: |
-        $headers = @{
-          "Authorization" = "Bearer ${{ env.ACCESS_TOKEN }}"
-        }
-        $response = Invoke-RestMethod -Uri "https://www.googleapis.com/drive/v3/files" -Method Get -Headers $headers
-        $cacheFile = $response.files | Where-Object { $_.name -eq "cache.zip" } | Select-Object -First 1
-        if ($cacheFile) {
-          Invoke-WebRequest -Uri "https://www.googleapis.com/drive/v3/files/$($cacheFile.id)?alt=media" -Headers $headers -OutFile "cache.zip"
-          Expand-Archive -LiteralPath cache.zip -DestinationPath C:/
-          Write-Output "::add-mask::$($cacheFile.id)"
-          Add-Content -Path $env:GITHUB_ENV -Value "CACHE_FILEID=$($cacheFile.id)"
-        } else {
-          New-Item C:/cache -ItemType Directory
-        }
+    
+    - name: Restore Haxelib Cache
+      uses: actions/cache@v4
+      with:
+        path: C:\haxelib\
+        key: haxelib-v1-${{ inputs.branch }}
+        restore-keys: |
+          haxelib-v1-${{ inputs.branch }}
+          haxelib-v1-
+    
+    - name: Restore Hxcpp Compile Cache
+      uses: actions/cache@v4
+      with:
+        path: C:\cache\
+        key: hxcpp-compile-v1-${{ inputs.branch }}-${{ env.LATEST_COMMIT_HASH }}
+        restore-keys: |
+          hxcpp-compile-v1-${{ inputs.branch }}-
+          hxcpp-compile-v1-
+
     - uses: krdlab/setup-haxe@master
       if: env.hashes_are_same == 'false'
       with:
         haxe-version: 4.3.6
+        
     - name: Install Haxelib
       if: env.hashes_are_same == 'false'
       run: |
-        cd ${{ secrets.FILENAME }}
+        cd ${{ inputs.branch }}
         haxelib setup C:/haxelib
         haxelib install hxcpp --quiet --global
         .\setup\windows.bat
+    
     - name: Compile
       if: env.hashes_are_same == 'false'
       run: |
-        cd ${{ secrets.FILENAME }}
+        cd ${{ inputs.branch }}
         haxelib run lime build windows --app-version="4.0.0-${{ github.run_id }}" -DHXCPP_COMPILE_CACHE=C:/cache
+    
     - name: Check latest Build file and get FileID
       if: env.hashes_are_same == 'false'
       run: |
@@ -79,6 +120,7 @@ jobs:
           Write-Output "::add-mask::$($ArtCrushFile.id)"
           Add-Content -Path $env:GITHUB_ENV -Value "UPLOADED_FILEID=$($ArtCrushFile.id)"
         }
+
     - name: Zip it and Upload Google Drive
       if: env.hashes_are_same == 'false'
       run: |
@@ -140,49 +182,48 @@ jobs:
           )
         } | ConvertTo-Json
         Invoke-RestMethod -Method POST -Headers @{"Content-Type"= "application/json"} -Uri ${{ secrets.WEBHOOK_URL }} -Body $body | Out-Null
-    - name: Upload the last cache built
+    
+    - name: Save Haxelib Cache
+      uses: actions/cache@v4
+      if: env.hashes_are_same == 'false' && steps.haxelib-cache.outputs.cache-hit != 'true'
+      with:
+        path: C:\haxelib\
+        key: haxelib-v1-${{ inputs.branch }}
+
+    - name: Save Hxcpp Compile Cache
+      uses: actions/cache@v4
+      if: env.hashes_are_same == 'false' && steps.hxcpp-cache.outputs.cache-hit != 'true'
+      with:
+        path: C:\cache\
+        key: hxcpp-compile-v1-${{ inputs.branch }}-${{ env.LATEST_COMMIT_HASH }}
+    
+    - name: Update latest_commits.json in current repository
       if: env.hashes_are_same == 'false'
       run: |
-        Compress-Archive -Path C:/cache -DestinationPath cache.zip -Update
-        $headers = @{
-          "Authorization" = "Bearer ${{ env.ACCESS_TOKEN }}"
-          "Content-Type" = "multipart/related; boundary=boundary"
+        $jsonFilePath = "latest_commits.json"
+        $branchName = "${{ inputs.branch }}"
+        $latest_commit = "${{ env.LATEST_COMMIT_HASH }}"
+
+        $hashesHashtable = @{}
+        if (Test-Path $jsonFilePath) {
+            try {
+                $jsonContent = Get-Content $jsonFilePath -Raw
+                if ($jsonContent.Trim()) {
+                    $hashesHashtable = $jsonContent | ConvertFrom-Json -AsHashtable
+                }
+            } catch {
+                 Write-Warning "Could not parse $jsonFilePath. Re-initializing."
+                 $hashesHashtable = @{}
+            }
         }
-        $metadata = @{
-          name="cache.zip"
-        } | ConvertTo-Json
         
-        $fileBytes = [System.IO.File]::ReadAllBytes("cache.zip");
-        $body = @(
-          "--boundary",
-          "Content-Type: application/json; charset=UTF-8",
-          "",
-          $metadata,
-          "--boundary",
-          "Content-Type: application/octet-stream",
-          "Content-Transfer-Encoding: base64",
-          "",
-          [Convert]::ToBase64String($fileBytes),
-          "--boundary--"
-        ) -join "`r`n"
-        $fileId = "${{ env.CACHE_FILEID }}"
-        $uri = if ($fileId) {
-          "https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=multipart"
-        } else {
-          "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart"
-        }
-        $method = if ($fileId) { "PATCH" } else { "POST" }
+        $hashesHashtable[$branchName] = $latest_commit
         
-        $response = Invoke-RestMethod -Method $method -Headers $headers -Uri $uri -Body $body
-    - name: Update latestHash in current repository
-      if: env.hashes_are_same == 'false'
-      run: |
-        cd ${{ github.workspace }}
-        (Get-Content "latest_commit.txt" | ForEach-Object { $_.Trim() }) -join '' | Out-File -FilePath "latestHash" -Force
+        $hashesHashtable | ConvertTo-Json | Out-File -FilePath $jsonFilePath -Encoding UTF8 -Force
+        
         git config --global user.name "github-actions"
         git config --global user.email "github-actions@github.com"
-        git add latestHash
+        git add $jsonFilePath
         $current_date = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-        git commit -m "Update latestHash at $current_date"
-        git remote set-url origin https://${{ secrets.ASE_GITHUB_TOKEN }}@github.com/ArtCrush/_blank
+        git commit -m "Update latest commit hash for branch $branchName at $current_date"
         git push
