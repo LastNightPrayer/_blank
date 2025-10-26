@@ -124,7 +124,7 @@ jobs:
     - name: Zip it and Upload Google Drive
       if: env.hashes_are_same == 'false'
       run: |
-        Compress-Archive -Path ${{ secrets.FILENAME }}/export/release/windows/bin -DestinationPath ArtCrush.zip -Update
+        Compress-Archive -Path ${{ inputs.branch }}/export/release/windows/bin -DestinationPath ArtCrush.zip -Update
         $headers = @{
           "Authorization" = "Bearer ${{ env.ACCESS_TOKEN }}"
           "Content-Type" = "multipart/related; boundary=boundary"
